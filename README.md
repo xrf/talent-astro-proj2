@@ -1,4 +1,20 @@
-talent-proj1
-============
+Project 2
+=========
 
-Nuclear Talent course project #1.
+This is the second project for the [TALENT course][1]:
+[nuclear theory for astrophysics (2014)][2].
+
+[1]: http://nucleartalent.org
+[2]: https://groups.nscl.msu.edu/jina/talent/wiki/Course_7
+
+Roles
+-----
+
+- **Analysis:**     ?
+- **Code:**         ?
+- **Parameter:**    ?
+
+Topic
+-----
+
+?
