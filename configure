@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+import glob, os, shutil, subprocess, sys
+import utils
+
+def msum(actions):
+    exception = Exception("no actions")
+    for action in actions:
+        try:
+            return action()
+        except Exception as e:
+            exception = e
+    raise exception
+
+def escape_apos(s):
+    return s.replace("'", '''"'"'"'"''')
+
+def find_command(name, ds):
+    for d in ds:
+        if subprocess.call(["sh", "-c",
+                            "command -v '{0}'".format(escape_apos(d))],
+                           stdout=utils.DEV_NULL, stderr=utils.DEV_NULL) == 0:
+            print("using {1} as {0}".format(name, d))
+            return d
+    raise Exception("can't find {0}; tried: {1}".format(name, ds))
+
+def find_dir(name, ds):
+    for d in ds:
+        if os.path.isfile(os.path.join(d, name)):
+            print("found {0} at {1}".format(name, d))
+            return d
+    raise Exception("can't find {0}; tried: {1}".format(name, ds))
+
+def find_lib(name, *args, **kwargs):
+    try:
+        d = libs[name]
+        print("override: using {0} at {1}".format(name, d))
+        return d
+    except KeyError:
+        return msum(map(
+            lambda ext: lambda:
+            find_dir("lib" + name + ext, ds=common_lib_dirs, *args, **kwargs),
+            common_lib_exts
+        ))
+
+def find_include(name, *args, **kwargs):
+    try:
+        d = includes[name]
+        print("override: using {0} at {1}".format(name, d))
+        return d
+    except KeyError:
+        return find_dir(name, ds=common_include_dirs, *args, **kwargs)
+
+fflags = ["-O3", "-Wall"]
+optimize_native = True
+includes = dict()
+include_dirs = set()
+libs = dict()
+lib_dirs = set()
+common_include_dirs = [
+    "/usr/include",
+    "/usr/local/include",
+    "/opt/local/include",
+]
+common_lib_dirs = [
+    "/usr/lib",
+    "/usr/local/lib",
+    "/opt/local/lib",
+]
+common_lib_exts = [".so", ".dylib", ".dll.a"]
+
+try:
+    from configure_overrides import *
+except ImportError:
+    pass
+
+# detect compilers
+cc = find_command("C compiler", ["cc", "gcc", "clang", "icc"])
+fc = find_command("Fortran compiler", ["f90", "gfortran", "ifort"])
+try:
+    mpifc = find_command("MPI Fortran compiler",
+                          ["mpif90", "mpigfortran", "mpiifort"])
+except Exception as e:
+    print("** warning: {0}".format(e))
+    print("** warning: won't be able to compile parallel version")
+    mpifc = ""
+
+fflags.extend("-I" + d for d in include_dirs)
+
+# enable architecture-specific optimizations if available
+if optimize_native:
+    march_native = ["-march=native", "-Wa,-q"]
+    with utils.TmpFile("int main(void){return 0;}", suffix=".c") as tmp:
+        if subprocess.call([cc, "-O3"] + march_native + [tmp.filename],
+                           stdout=utils.DEV_NULL, stderr=utils.DEV_NULL) == 0:
+            fflags.extend(march_native)
+            print("enabling architecture-specific optimizations")
+        else:
+            print("note: optional flag '-march=native -Wa,-q' is NOT supported")
+
+s = utils.read_file("Makefile.in")
+s = "\n".join((
+    ".POSIX:",
+    "",
+    "CC=" + cc,
+    "FC=" + fc,
+    "MPIFC=" + mpifc if mpifc else "",
+    "FFLAGS=" + " ".join(fflags),
+    "",
+    s,
+))
+utils.write_file("Makefile", s)
