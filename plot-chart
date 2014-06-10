@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+#
+# Originally by Kaitlin J. Cook (KJC) on 2014-06-02:
+#
+#     https://github.com/KJCook/sedov-solution
+#
+# A python script for plotting abundances on the nuclear chart as a function
+# of time.
+
+import numpy as np
+import matplotlib.animation
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
+
+# set up the chart; import the A, Z, N of known nuclei
+azn = np.genfromtxt("chart-azn", delimiter=" ", dtype=float)
+Abig = np.asarray(row[0] for row in azn)
+Zbig = np.asarray(row[1] for row in azn)
+Nbig = np.asarray(row[2] for row in azn)
+
+stable = np.genfromtxt("chart-stable", delimiter=" ", dtype=float)
+Astable = np.asarray([row[0] for row in stable])
+Zstable = np.asarray([row[1] for row in stable])
+Nstable = Astable - Zstable
+
+network = np.genfromtxt("150network.dat", delimiter=" ", dtype=float)
+Znetwork = [row[2] for row in network]
+Nnetwork = [row[3] for row in network]
+
+# import the data from XNet output `ev1`
+data = np.genfromtxt("ev150np1.dat", dtype=float)
+time = [row[1] for row in data]
+abundance = [[row[i] for row in data] for i in range(6, 156)]
+
+# transpose the graph
+color_data = np.asarray(abundance)
+color_data = np.transpose(color_data)
+color_data = np.asarray(color_data)
+
+# make it logarithmic
+color_data = color_data + 1e-33
+color_data = np.log10(color_data)
+
+# plot a set of white boxes
+fig = plt.figure()
+ax  = fig.add_subplot(111)
+big = ax.scatter(Nbig, Zbig, c="w", marker="s", s=40)
+
+# initialize animation
+scatt = ax.scatter(Nnetwork, Znetwork, c="w", marker ="s", s=40)
+ax.set_xlabel("Number of Neutrons", fontsize=12)
+ax.set_ylabel("Number of Protons", fontsize=12)
+ax.set_xlim(-2, 40)
+ax.set_ylim(-2, 31)
+
+def update_plot(i, data, scatt):
+    scatt.set_array(data[i])
+    return scatt,
+
+ani = matplotlib.animation.FuncAnimation(
+    fig,
+    update_plot,
+    frames=len(color_data),
+    interval=1,
+    fargs=(color_data,scatt)
+)
+
+cbar = plt.colorbar(scatt)
+
+stablep = ax.scatter(Nstable, Zstable, c="k", marker="x", s=20)
+cbar.set_label("Log10(Abundance)", rotation=270)
+
+# Save the animation as an mp4.  This requires ffmpeg or mencoder to be
+# installed.  The `extra_args` ensures that the x264 codec is used, so that
+# the video can be embedded in html5.  You may need to adjust this for your
+# system: for more information, see:
+#
+#     http://matplotlib.sourceforge.net/api/animation_api.html
+#
+ani.save("np150chart.mp4", fps=70, extra_args=["-vcodec", "libx264"])
+
+plt.show()
