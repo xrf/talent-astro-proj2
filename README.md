@@ -10,11 +10,14 @@ This is the second project for the [TALENT course][1]:
 Roles
 -----
 
-- **Analysis:**     ?
-- **Code:**         ?
-- **Parameter:**    ?
+- **Analysis:**     Fei Yuan
+- **Code:**         Amber Lauer
+- **Parameter:**    Tsunghan Yeh
 
 Topic
 -----
 
-?
+Modelling X-ray burst nucleosynthesis in XNet using the model in the
+[dissertation of Kit Yu Lau (2012)][3].
+
+[3]: http://www.nscl.msu.edu/ourlab/publications/download/Lau2012_303.pdf
