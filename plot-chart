@@ -6,36 +6,57 @@
 #
 # A python script for plotting abundances on the nuclear chart as a function
 # of time.
-
-import numpy as np
+#
+import os, sys
 import matplotlib.animation
 import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
+import numpy as np
+import tso_reader
+
+if len(sys.argv) != 2:
+    sys.stderr.write("Usage: {0} DATA_DIR\n".format(sys.argv[0]))
+    sys.exit(1)
+data_dir = sys.argv[1]
 
 # set up the chart; import the A, Z, N of known nuclei
 azn = np.genfromtxt("chart-azn", delimiter=" ", dtype=float)
-Abig = np.asarray(row[0] for row in azn)
-Zbig = np.asarray(row[1] for row in azn)
-Nbig = np.asarray(row[2] for row in azn)
+Abig = np.array([row[0] for row in azn])
+Zbig = np.array([row[1] for row in azn])
+Nbig = np.array([row[2] for row in azn])
 
 stable = np.genfromtxt("chart-stable", delimiter=" ", dtype=float)
-Astable = np.asarray([row[0] for row in stable])
-Zstable = np.asarray([row[1] for row in stable])
+Astable = np.array([row[0] for row in stable])
+Zstable = np.array([row[1] for row in stable])
 Nstable = Astable - Zstable
 
-network = np.genfromtxt("150network.dat", delimiter=" ", dtype=float)
-Znetwork = [row[2] for row in network]
-Nnetwork = [row[3] for row in network]
+os.chdir(data_dir)
+
+Znetwork = []
+Nnetwork = []
+with open("netwinv", "r") as f:
+    num_nuclei = int(next(f))
+    next(f)
+    # skip the first couple liens
+    for _ in zip(range(num_nuclei), f):
+        pass
+    while True:
+        try:
+            row = next(f).split()
+        except StopIteration:
+            break
+        Znetwork.append(row[2])
+        Nnetwork.append(row[3])
+        next(f)
+        next(f)
+        next(f)
 
 # import the data from XNet output `ev1`
-data = np.genfromtxt("ev150np1.dat", dtype=float)
-time = [row[1] for row in data]
-abundance = [[row[i] for row in data] for i in range(6, 156)]
+data = tso_reader.read_tso("tso1")
+time = data["t"]
+abundance = data["y"]
 
 # transpose the graph
-color_data = np.asarray(abundance)
-color_data = np.transpose(color_data)
-color_data = np.asarray(color_data)
+color_data = np.transpose(abundance)
 
 # make it logarithmic
 color_data = color_data + 1e-33
@@ -77,6 +98,5 @@ cbar.set_label("Log10(Abundance)", rotation=270)
 #
 #     http://matplotlib.sourceforge.net/api/animation_api.html
 #
-ani.save("np150chart.mp4", fps=70, extra_args=["-vcodec", "libx264"])
-
-plt.show()
+# note: doesn't seem to work on python3-matplotlib on Arch Linux
+ani.save("chart.mp4", fps=70, extra_args=["-vcodec", "libx264"])
