@@ -1,4 +1,90 @@
-all:
+all: reducereaclib xnet
 
 clean:
-	@rm -fr dist
+	rm -fr dist
+
+run: run-xnet
+
+run-reducereaclib: $(RRL_ROOT)/netsu $(RRL_ROOT)/netwinv
+
+run-xnet: \
+    $(XNET_ROOT)/source/xnet \
+    $(RRL_ROOT)/INPUT/sunet \
+    $(RRL_ROOT)/netwinv \
+    $(RRL_ROOT)/netwinv \
+    control \
+    ab \
+    th
+	@DIR=`date +'%Y-%m-%d/%H-%M-%S'` && \
+	mkdir -p runs/$$DIR && \
+	cp $(XNET_ROOT)/source/xnet \
+	   $(RRL_ROOT)/INPUT/sunet \
+	   $(RRL_ROOT)/netsu \
+	   $(RRL_ROOT)/netwinv \
+	   control \
+	   ab \
+	   th \
+	   runs/$$DIR && \
+	echo "Running in runs/$$DIR..." && \
+	cd runs/$$DIR && time ./xnet
+
+reducereaclib: $(RRL_ROOT)/reducereaclib
+
+xnet: $(XNET_ROOT)/source/xnet
+
+$(RRL_ROOT)/netsu $(RRL_ROOT)/netwinv: \
+    $(RRL_ROOT)/reducereaclib \
+    $(RRL_ROOT)/INPUT/rawreaclib \
+    $(RRL_ROOT)/INPUT/sunet \
+    $(RRL_ROOT)/INPUT/winvn
+	cd $(RRL_ROOT) && ./reducereaclib
+
+
+$(RRL_ROOT)/INPUT/sunet: sunet
+	cp sunet $@
+
+$(RRL_ROOT)/reducereaclib: $(RRL_ROOT)/reducereaclib.f
+	$(FC) $(FFLAGS) -o $@ $(RRL_ROOT)/reducereaclib.f
+
+$(RRL):
+	mkdir -p $(RRL_ROOT)
+	@cd $(RRL_ROOT) && \
+	download() { \
+	    if command >/dev/null 2>&1 -v curl; \
+	    then curl -fL -- "$$1"; \
+	    else \
+	        if command >/dev/null 2>&1 -v wget; \
+	        then wget -O- -- "$$1"; \
+	        else \
+	            echo >&2 "error: missing 'curl' or 'wget'" && \
+	            return 127; \
+	        fi; \
+	    fi; \
+	} && \
+	download $(RRL_URL) | tar xzf -
+	@touch $@
+
+$(XNET_ROOT)/source/xnet: $(XNET)
+	cd $(XNET_ROOT)/source && \
+	cp $(XNET_MAKEFILE) Makefile_local && \
+	make
+
+$(XNET):
+	mkdir -p $(XNET_DIR)
+	@cd $(XNET_DIR) && \
+	download() { \
+	    if command >/dev/null 2>&1 -v curl; \
+	    then curl -fL -- "$$1"; \
+	    else \
+	        if command >/dev/null 2>&1 -v wget; \
+	        then wget -O- -- "$$1"; \
+	        else \
+	            echo >&2 "error: missing 'curl' or 'wget'" && \
+	            return 127; \
+	        fi; \
+	    fi; \
+	} && \
+	download >xnet_public.zip $(XNET_URL) && \
+	unzip xnet_public.zip && \
+	rm xnet_public.zip
+	@touch $@
