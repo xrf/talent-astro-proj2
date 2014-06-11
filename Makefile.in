@@ -46,6 +46,8 @@ $(RRL_ROOT)/INPUT/sunet: sunet
 $(RRL_ROOT)/reducereaclib: $(RRL_ROOT)/reducereaclib.f
 	$(FC) $(FFLAGS) -o $@ $(RRL_ROOT)/reducereaclib.f
 
+$(RRL_ROOT)/reducereaclib.f: $(RRL)
+
 $(RRL):
 	mkdir -p $(RRL_ROOT)
 	@cd $(RRL_ROOT) && \
