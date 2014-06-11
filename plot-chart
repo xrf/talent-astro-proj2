@@ -1,102 +1,190 @@
 #!/usr/bin/env python
 #
-# Originally by Kaitlin J. Cook (KJC) on 2014-06-02:
-#
-#     https://github.com/KJCook/sedov-solution
+# Usage: plot-chart FILE
 #
 # A python script for plotting abundances on the nuclear chart as a function
 # of time.
 #
+# The input data is read from FILE containing the XNet data.  By default it
+# uses the `tso_reader` module (from `tso_reader.py`) to read the data in the
+# "tso" format (Fortran binary format used by XNet).
+#
+# The animation is saved as an MP4.  The output filename is found by replacing
+# the file extension of FILE with `.mp4`.
+#
+# This will require `ffmpeg` or `mencoder` to be installed with support for
+# the x264 codec.  x264 is nice because the compression artifacts aren't too
+# bad.
+#
+# BUG: animation saving fails on Python 3 (Matplotlib bug?).
+#
+# Modified by Fei Yuan on 2014-06-10.
+# Originally by Kaitlin J. Cook (KJC) on 2014-06-02:
+#
+#     https://github.com/KJCook/sedov-solution
+#
+# ----------------------------------------------------------------------------
+# Configuration
+# -------------
+
+# range of the axes
+#
+# format: (min, max)
+n_range = (-1, 11)
+z_range = (-1, 11)
+
+# size of the squares on the chart
+#
+# this needs to be adjusted if the range of axes are different, but I have no
+# idea what the units of this quantity are so have fun~
+marker_size = 700
+
+# number of data points per frame
+#
+# note: number_of_frames * frame_period = number_of_data_points
+frame_period = 100
+
+# framerate (number of frames per second)
+fps = 20
+
+# color scheme
+#
+# see Matplotlib docs for the available color maps
+color_map = "cubehelix"
+
+# a tiny value added to all abundances to avoid logarithm of zero
+minimum = 1e-30
+
+# filenames containing (Z, N) of known nuclei
+base_fn   = "chart-all"
+stable_fn = "chart-stable"
+
+# ----------------------------------------------------------------------------
+# Do stuff
+# --------
+
 import os, sys
 import matplotlib.animation
+import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
-import tso_reader
 
+# get input parameter
 if len(sys.argv) != 2:
-    sys.stderr.write("Usage: {0} DATA_DIR\n".format(sys.argv[0]))
+    sys.stderr.write("Usage: {0} FILE\n".format(sys.argv[0]))
     sys.exit(1)
-data_dir = sys.argv[1]
+input_fn = sys.argv[1]
 
-# set up the chart; import the A, Z, N of known nuclei
-azn = np.genfromtxt("chart-azn", delimiter=" ", dtype=float)
-Abig = np.array([row[0] for row in azn])
-Zbig = np.array([row[1] for row in azn])
-Nbig = np.array([row[2] for row in azn])
+# import the data from XNet output
+#
+#   - network_z, network_n:
+#     1D numpy arrays of Z and N respectively, indexed by nuclide
+#
+#   - time:
+#     1D numpy array of time, indexed by time
+#
+#   - abundance:
+#     2D numpy array of abundance, indexed by (in this order):
+#       - (1) time
+#       - (2) nuclide
+#
+# note: currently uses the `tso_reader` module to read the "tso" files.
+#
+import tso_reader
+data      = tso_reader.read_tso(input_fn)
+network_z = data["zz"]
+network_n = data["aa"] - network_z
+time      = data["t"]
+abundance = np.transpose(data["y"])
+del data
 
-stable = np.genfromtxt("chart-stable", delimiter=" ", dtype=float)
-Astable = np.array([row[0] for row in stable])
-Zstable = np.array([row[1] for row in stable])
-Nstable = Astable - Zstable
+# import (Z, N) of known and stable nuclei
+base     = np.genfromtxt(base_fn, dtype=float).transpose()
+base_z   = base[1]
+base_n   = base[2]
+stable   = np.genfromtxt(stable_fn, dtype=float).transpose()
+stable_z = stable[1]
+stable_n = stable[0] - stable_z
 
-os.chdir(data_dir)
+# add a small value because zero is bad for log plots
+abundance  = abundance + minimum
+color_data = np.log10(abundance)
+num_frames = len(color_data) // frame_period
 
-Znetwork = []
-Nnetwork = []
-with open("netwinv", "r") as f:
-    num_nuclei = int(next(f))
-    next(f)
-    # skip the first couple liens
-    for _ in zip(range(num_nuclei), f):
-        pass
-    while True:
-        try:
-            row = next(f).split()
-        except StopIteration:
-            break
-        Znetwork.append(row[2])
-        Nnetwork.append(row[3])
-        next(f)
-        next(f)
-        next(f)
-
-# import the data from XNet output `ev1`
-data = tso_reader.read_tso("tso1")
-time = data["t"]
-abundance = data["y"]
-
-# transpose the graph
-color_data = np.transpose(abundance)
-
-# make it logarithmic
-color_data = color_data + 1e-33
-color_data = np.log10(color_data)
+# empty data to scale the color bars correctly
+empty    = np.zeros_like(color_data[0]) + np.max(color_data)
+empty[0] = np.min(color_data)
 
 # plot a set of white boxes
-fig = plt.figure()
-ax  = fig.add_subplot(111)
-big = ax.scatter(Nbig, Zbig, c="w", marker="s", s=40)
-
-# initialize animation
-scatt = ax.scatter(Nnetwork, Znetwork, c="w", marker ="s", s=40)
-ax.set_xlabel("Number of Neutrons", fontsize=12)
-ax.set_ylabel("Number of Protons", fontsize=12)
-ax.set_xlim(-2, 40)
-ax.set_ylim(-2, 31)
-
-def update_plot(i, data, scatt):
-    scatt.set_array(data[i])
-    return scatt,
-
-ani = matplotlib.animation.FuncAnimation(
-    fig,
-    update_plot,
-    frames=len(color_data),
-    interval=1,
-    fargs=(color_data,scatt)
+figure = plt.figure()
+axes = figure.add_subplot(111)
+axes.set_xlabel("N", fontsize=12)
+axes.set_ylabel("Z", fontsize=12)
+axes.set_xlim(*n_range)
+axes.set_ylim(*z_range)
+base = axes.scatter(
+    base_n,
+    base_z,
+    c="#ffffff",
+    marker="s",
+    edgecolor="#cccccc",
+    s=marker_size,
 )
 
-cbar = plt.colorbar(scatt)
+# initialize animation
+scatt = axes.scatter(
+    network_n,
+    network_z,
+    c=empty,
+    marker="s",
+    s=marker_size,
+    edgecolor="#000000",
+    cmap=color_map,
+)
+time_text = axes.text(.05, .9, "", transform=axes.transAxes)
 
-stablep = ax.scatter(Nstable, Zstable, c="k", marker="x", s=20)
-cbar.set_label("Log10(Abundance)", rotation=270)
+def init():
+    scatt.set_array(empty)
+    time_text.set_text("")
+    return scatt, time_text
 
-# Save the animation as an mp4.  This requires ffmpeg or mencoder to be
-# installed.  The `extra_args` ensures that the x264 codec is used, so that
-# the video can be embedded in html5.  You may need to adjust this for your
-# system: for more information, see:
-#
-#     http://matplotlib.sourceforge.net/api/animation_api.html
-#
-# note: doesn't seem to work on python3-matplotlib on Arch Linux
-ani.save("chart.mp4", fps=70, extra_args=["-vcodec", "libx264"])
+def update(i):
+    print("{0:5.1f}%".format(i * 100. / num_frames))
+    i *= frame_period
+    scatt.set_array(color_data[i])
+    time_text.set_text(str(time[i]))
+    return scatt, time_text
+
+animation = matplotlib.animation.FuncAnimation(
+    figure,
+    update,
+    frames=num_frames,
+    init_func=init,
+)
+colorbar = plt.colorbar(scatt)
+colorbar.set_label("log10(abundance)", rotation=270, labelpad=20)
+
+axes.scatter(
+    stable_n,
+    stable_z,
+    c="#666666",
+    marker="x",
+    s=marker_size * .5,
+)
+
+# save the animation
+input_base, _   = os.path.splitext(input_fn)
+output_video_fn = input_base + ".mp4"
+try:
+    os.remove(output_video_fn)
+except:
+    pass
+try:
+    animation.save(
+        output_video_fn,
+        fps=fps,
+        extra_args=["-vcodec", "libx264"],
+    )
+except UnicodeDecodeError:
+    raise Exception("matplotlib.animation.save failed; " +
+                    "try using Python 2.7 instead")

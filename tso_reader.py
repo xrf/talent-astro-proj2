@@ -1,3 +1,6 @@
+# This module reads the binary output files from XNet.
+#
+# Modified by Fei Yuan on 2014-06-10.
 # Originally by Kevin Siegl.
 import struct
 import numpy as np
@@ -18,8 +21,51 @@ def read_fortran(f, fmt):
     return read_raw(f, "<i" + fmt + "i")[1:-1]
 
 def read_tso(filename):
-    '''Reads the `tso` output from XNet.  The naming convention follows that
-    of the Fortran code.  Returns a `dict` all the data and parameters.'''
+    '''Reads the `tso` output from XNet.  Returns a dictionary with all the
+    data and parameters.  The naming convention follows that of the
+    Fortran code, so you can find descriptions of these variables in
+    XNet.  The keys in the dictionary are:
+
+      - descript
+      - data_desc
+
+      - kstmx
+      - kitmx
+      - iweak
+      - iscrn
+      - iconvc
+      - changemx
+      - tolm
+      - tolc
+      - yacc
+      - ymin
+      - tdel_mm
+
+      - inab_file
+      - abund_desc
+
+      - thermo_file
+      - thermo_desc
+
+      - ny
+      - zz
+      - aa
+
+      - mflx
+      - ifl_orig
+      - ifl_term
+
+      - kstep
+      - t9t
+      - rhot
+      - tdel
+      - edot
+
+      - t
+      - y
+      - flx
+
+    '''
     ret = {}
     with open(filename, "rb") as f:
 
