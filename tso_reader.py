@@ -53,8 +53,8 @@ def read_tso(filename):
 
         _         = read_raw(f, "<i")
         ny,       = read_raw(f, "<i")
-        ret["zz"] = np.array(read_raw(f, "<" + "d" * ny))
-        ret["aa"] = np.array(read_raw(f, "<" + "d" * ny))
+        ret["zz"] = np.array(read_raw(f, "<" + "d" * ny), dtype=int)
+        ret["aa"] = np.array(read_raw(f, "<" + "d" * ny), dtype=int)
         _         = read_raw(f, "<i")
         ret["ny"] = ny
 

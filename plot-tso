@@ -15,7 +15,7 @@ for i in range(data["ny"]):
     plt.plot(
         data["t"],
         data["y"][i],
-        label=elements.symbols[int(data["zz"][i])]
+        label=elements.symbols[data["zz"][i]]
     )
 plt.legend()
 plt.axes().set_xscale("log")
