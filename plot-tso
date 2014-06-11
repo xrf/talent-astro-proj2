@@ -18,7 +18,9 @@ for i in range(data["ny"]):
         data["y"][i],
         label=elements.symbols[data["zz"][i]]
     )
-plt.legend()
+box = plt.axes().get_position()
+plt.axes().set_position([box.x0, box.y0, box.width * 0.8, box.height])
+plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 if log_scale:
     plt.axes().set_xscale("log")
     plt.axes().set_yscale("log")
