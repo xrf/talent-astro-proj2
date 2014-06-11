@@ -9,6 +9,7 @@ if len(sys.argv) != 2:
     sys.exit(1)
 
 data = tso_reader.read_tso(sys.argv[1])
+log_scale = True
 
 # display data
 for i in range(data["ny"]):
@@ -18,6 +19,7 @@ for i in range(data["ny"]):
         label=elements.symbols[data["zz"][i]]
     )
 plt.legend()
-plt.axes().set_xscale("log")
-plt.axes().set_yscale("log")
+if log_scale:
+    plt.axes().set_xscale("log")
+    plt.axes().set_yscale("log")
 plt.show()
