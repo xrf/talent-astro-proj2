@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+import matplotlib.pyplot as plt
+import numpy as np
+
+log_scale = False
+
+data = np.genfromtxt("th_fisker_aboveign_b1", skiprows=4)
+data = np.transpose(data)
+# cols: time temp density ??
+
+# display data
+plt.plot(
+    data[0],
+    data[1],
+)
+#plt.legend()
+if log_scale:
+    plt.axes().set_xscale("log")
+    plt.axes().set_yscale("log")
+plt.show()
