@@ -2,7 +2,7 @@
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-import tso_reader
+import elements, tso_reader
 
 if len(sys.argv) != 2:
     sys.stderr.write("Usage: {0} TSO_FILE\n".format(sys.argv[0]))
@@ -12,7 +12,12 @@ data = tso_reader.read_tso(sys.argv[1])
 
 # display data
 for i in range(data["ny"]):
-    plt.plot(data["t"], data["y"][i])
+    plt.plot(
+        data["t"],
+        data["y"][i],
+        label=elements.symbols[int(data["zz"][i])]
+    )
+plt.legend()
 plt.axes().set_xscale("log")
 plt.axes().set_yscale("log")
 plt.show()
