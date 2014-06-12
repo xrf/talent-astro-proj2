@@ -1,3 +1,6 @@
+# This is the initial Makefile input; `configure` will use this file as input
+# to generate the actual Makefile.
+
 all: reducereaclib xnet
 
 clean:

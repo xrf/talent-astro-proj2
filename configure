@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+#
+# This script uses `Makefile.in` to generate the actual Makefile.
+#
 import glob, os, shutil, subprocess, sys
 import utils
 
