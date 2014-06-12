@@ -41,7 +41,7 @@ marker_size = 700
 # number of data points per frame
 #
 # note: number_of_frames * frame_period = number_of_data_points
-frame_period = 100
+frame_period = 2
 
 # framerate (number of frames per second)
 fps = 20
