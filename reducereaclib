@@ -1,0 +1,247 @@
+#!/usr/bin/env python
+import math, itertools, re, sys
+
+def f_write(unit, fmt, *args):
+    '''Implements the WRITE statement from Fortran.'''
+    fmts = itertools.cycle(tuple(fmt) + (("\n",),))
+    flag_p = 0
+    for arg in args:
+        while True:
+            fmt = next(fmts)
+            t = fmt[0].upper()
+            if t == "\n":
+                unit.write("\n")
+                continue
+            if t == "A":
+                w = fmt[1]
+                unit.write(arg[:w] + " " * max(0, w - len(arg)))
+                break
+            if t == "X":
+                unit.write(" ")
+                break
+            if t == "I":
+                w = fmt[1]
+                if len(fmt) > 2:
+                    m = fmt[2]
+                    if m == 0 and arg == 0:
+                        if w == 0:
+                            unit.write(" ")
+                            break
+                    else:
+                        s = "{{0:0{0}d}}".format(m).format(arg)
+                s = "{0:d}".format(arg)
+                if w == 0:
+                    unit.write("{0:s}".format(s))
+                else:
+                    s = "{{0:{0}s}}".format(w).format(s)
+                    if len(s) > w:
+                        unit.write("*" * w)
+                    else:
+                        unit.write(s)
+                break
+            if t == "E":
+                w = fmt[1]
+                d = fmt[2]
+                # a rather dumb way to do this but oh well
+                s = "{{0:.{0}E}}".format(d - 1).format(arg)
+                patt = "([0-9]*\\.[0-9]*)E([-+][0-9]+)"
+                x, e = re.match(patt, s).groups()
+                k = flag_p - 1
+                x = float(z) * 10 ** k
+                e = int(e) - k
+                e = "{1:+03d}".format(e)
+                if e < 3:
+                    e = "E" + e
+                s = "{{0:.{0}f}}{{1}}".format(d - k).format(x, e)
+                s = "{{0:{0}s}}".format(w).format(s)
+                if len(s) > w:
+                    unit.write("*" * w)
+                else:
+                    unit.write(s)
+                break
+            if t == "F":
+                w = fmt[1]
+                d = fmt[2]
+                unit.write("{{0:{0}.{1}f}}".format(w, d)
+                           .format(arg * 10 ** flag_p))
+                break
+            if t == "P":
+                flag_p = fmt[1]
+                continue
+            raise Exception("not implemented / supported: " + repr(t))
+    unit.write("\n")
+
+def padded_read(line, count):
+    '''Reads from the given line, padding with spaces as needed.'''
+    if count > len(line):
+        line = line + " " * (len(line) - count)
+    return line[:count], line[count:]
+
+def f_read(unit, fmt, *args):
+    '''Implements the READ statement from Fortran.'''
+    ret  = []
+    fmts = itertools.cycle(tuple(fmt) + (("\n",),))
+    try:
+        line = next(unit)
+    except StopIteration:
+        raise EOFError()
+    for arg in args:
+        while True:
+            fmt = next(fmts)
+            t = fmt[0].upper()
+            if t == "\n":
+                line = next(unit)
+                continue
+            if t == "A":
+                w = fmt[1]
+                s, line = padded_read(line, w)
+                ret.append(s.rstrip())
+                break
+            if t == "X":
+                _, line = padded_read(line, 1)
+                break
+            if t == "I":
+                w = fmt[1]
+                s, line = padded_read(line, w)
+                ret.append(int(s))
+                break
+            if t == "F":
+                w = fmt[1]
+                d = fmt[2]
+                s, line = padded_read(line, w)
+                s = s.upper()
+                # NAN may contain sign and/or trailing chars
+                if "NAN" in s:
+                    ret.append(float("nan"))
+                else:
+                    # a hack to deal with missing 'E'
+                    s = s.strip().replace(" ", "0")
+                    s = s[0] + s[1:].replace("+", "E+").replace("-", "E-")
+                    ret.append(float(s))
+                    # note that this doesn't deal with scale factors
+                break
+            raise Exception("not implemented / supported: " + repr(t))
+    return ret
+
+def f_adjustl(s):
+    '''Implements the ADJUSTL function from Fortran.'''
+    t, u = re.match("( *)(.*)", s).groups()
+    return u + t
+
+m99 = 2 * (("A", 5),)
+m98 = 1 * (("X",),) + 15 * (("A", 5),)
+m97 = (("A", 72),)
+m96 = 2 * (("A", 5),)
+m95 = (("A", 5), ("F", 12, 3),) + 2 * (("I", 4),) + \
+      (("F", 6, 1), ("F", 10, 3))
+m94 = 8 * (("F", 9, 2),)
+m93 = (("I", 1),) + 4 * (("X",),) + 6 * (("A", 5),) + 8 * (("X",),) + \
+      (("A", 4), ("A", 1), ("A", 1)) + 3 * (("X",),) + \
+      (("P", 1,), ("E", 12, 5))
+m92 = 4 * (("E", 13, 6),)
+m91 = 2 * (("I", 5),)
+
+ma   = [0]  * 10000
+inam = [""] * 10000
+namw = [""] * 10000
+nnuc = (2, 3, 4, 3, 4, 5, 6, 5)
+
+with open("INPUT/sunet",      "rb") as f1, \
+     open("INPUT/winvn",      "rb") as f2, \
+     open("INPUT/rawreaclib", "rb") as f3, \
+     open("netwinv",          "wb") as f4, \
+     open("netsu",            "wb") as f5:
+
+    # read in sunet
+    n = 0
+    while True:
+        n = n + 1
+        try:
+            inam[n - 1], = f_read(f1, m99, 1)
+        except EOFError:
+            break
+    n = n - 1
+    f_write(sys.stdout, m98, *inam[1 - 1 : n])
+
+    # read in winvn
+    line, = f_read(f2, m97, 1)
+    f_write(f4, m91, n)
+    line, = f_read(f2, m97, 1)
+    f_write(f4, m97, line)
+    nw = 0
+    i = 1
+    while True:
+        nw = nw + 1
+        namw[nw - 1], = f_read(f2, m96, 1)
+        if nw == 1:
+            pass
+        else:
+            if namw[nw - 1] == namw[nw - 1 - 1]:
+                break
+        if namw[nw - 1] != inam[i - 1]:
+            continue
+        f_write(f4, m96, namw[nw - 1])
+        ma[i - 1] = nw
+        i = i + 1
+    nw = nw - 1
+    i = 1
+
+    # write for nuclides only in sunet
+    for l in range(1, n + 1):
+        k = ma[l - 1] - i + 1
+        for j in range(1, k + 1):
+            name, a, na, nb, sp, be = f_read(f2, m95, 1, 1, 1, 1, 1, 1)
+            g = f_read(f2, m94, 24)
+        i = ma[l - 1] + 1
+        f_write(f4, m95, name, a, na, nb, sp, be)
+        f_write(f4, m94, *g)
+
+    # reading ffn weak rates would go here
+    # so we can replace simple beta-decays
+    # with temp & dens dependent rates
+    # for now, we ignore
+    nm = 0
+
+    nline = 0
+    f_write(f5, m91, nm, nm)
+    while True:
+        try:
+            k, namr, label, nr, vm, Q = f_read(f3, m93, 1, 6, 1, 1, 1, 1)
+        except EOFError:
+            break
+        except:
+            print("ERROR: header line {0}".format(nline))
+            sys.exit()
+        try:
+            p = f_read(f3, m92, 7)
+        except EOFError:
+            raise
+        except:
+            print("ERROR: body line {0}".format(nline))
+            f_write(sys.stdout, m93, *([k] + namr[1 - 1 : 6] +
+                                       [label, nr, vw, Q]))
+            f_write(sys.stdout, m92, *p[1 - 1 : 7])
+            sys.exit()
+        nline = nline + 3
+        if k != 0:
+            chap = k
+            f_write(f5, m93, *([k] + namr[1 - 1 : 6] +
+                               [label, nr, vw, Q]))
+            f_write(f5, m92, *p[1 - 1 : 7])
+            continue
+        for j in range(1, nnuc[chap - 1] + 1):
+            i1[j - 1] = 0.
+        for i in range(1, n + 1):
+            for j in range(1, nnuc[chap - 1] + 1):
+                if f_adjustl(namr[j - 1]) == f_adjustl(inam[i - 1]):
+                    i1[j - 1] = i1[j - 1] + 1.
+        temp = nnuc[chap - 1]
+        if chap == 8 and f_adjustl(namr[5 - 1]) == "     ":
+            temp = 4
+        i2 = 1.
+        for j in range(1, temp + 1):
+            i2 = i2 * i1[j - 1]
+        if i2 == 1.:
+            f_write(f5, m93, *([k] + namr[1 - 1 : 6] +
+                               [label, nr, vw, Q]))
+            f_write(f5, m92, *p[1 - 1 : 7])
