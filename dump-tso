@@ -42,6 +42,6 @@ fn_base, _ = os.path.splitext(in_fn)
 np.savetxt(
     fn_base + ".out",
     np.concatenate(((data["t"],), filtered_ys)).transpose(),
-    header="# note: columns of zeros (if any) are stripped from this file\n# " +
+    header="note: columns of zeros (if any) are stripped from this file\ntime " +
            " ".join(filtered_nuclide_names),
 )
