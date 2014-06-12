@@ -68,10 +68,23 @@ $(RRL):
 	download $(RRL_URL) | tar xzf -
 	@touch $@
 
-$(XNET_ROOT)/source/xnet: $(XNET)
-	cd $(XNET_ROOT)/source && \
-	cp $(XNET_MAKEFILE) Makefile_local && \
-	make
+$(XNET_ROOT)/source/xnet:  $(XNET)
+	@cd $(XNET_ROOT)/source && \
+	touch Makefile_local && \
+	$(MAKE) -e FC="$(FC)" \
+	           FFLAGS="$(R8) $(FFLAGS)" \
+	           LDR="$(FC)" \
+	           CMODE="$(CMODE)" \
+	           MATRIX_SOLVER="$(MATRIX_SOLVER)" \
+	           R8="$(R8)" \
+	           OPT="$(OPT)" \
+	           TRAP="$(TRAP)" \
+	           DEBUG="$(DEBUG)" \
+	           PROFILE="$(PROFILE)" \
+	           MOD="$(MOD)" \
+	           EXTRA_LINK="$(EXTRA_LINK)" \
+	           LAPACK_LIBDIR="$(LAPACK_LIBDIR)" \
+	           LAPACK_LIBS="$(LAPACK_LIBS)"
 
 $(XNET):
 	mkdir -p $(XNET_DIR)
