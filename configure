@@ -83,13 +83,19 @@ fflags.extend("-I" + d for d in include_dirs)
 
 wiki_url = "https://wikihost.nscl.msu.edu/talent/lib/exe/fetch.php?media="
 make_vars = {
-    "FC": fc,
-    "FFLAGS": " ".join(fflags),
+    # fortran stuff
+    "FC":            fc,
+    "FFLAGS":        " ".join(fflags),
 
+    # default run directory
+    "RUN_DIR":       "main",
+
+    # config for reducereaclib
     "RRL_URL":       wiki_url + "reducereaclib.tar.gz",
     "RRL_ROOT":      "dist/reducereaclib",
     "RRL":           "$(RRL_ROOT)/.cookie",
 
+    # config for xnet
     "XNET_URL":      wiki_url + "xnet_public.zip",
     "XNET_DIR":      "dist/xnet_public",
     "XNET":          "$(XNET_DIR)/.cookie",

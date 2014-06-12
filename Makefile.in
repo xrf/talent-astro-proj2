@@ -18,8 +18,7 @@ run-xnet: \
     control \
     ab \
     th
-	@DIR=`date +'%Y-%m-%d/%H-%M-%S'` && \
-	mkdir -p runs/$$DIR && \
+	@mkdir -p runs/$(RUN_DIR) && \
 	cp $(XNET_ROOT)/source/xnet \
 	   $(RRL_ROOT)/INPUT/sunet \
 	   $(RRL_ROOT)/netsu \
@@ -27,9 +26,9 @@ run-xnet: \
 	   control \
 	   ab \
 	   th \
-	   runs/$$DIR && \
-	echo "Running in runs/$$DIR..." && \
-	cd runs/$$DIR && time ./xnet
+	   runs/$(RUN_DIR) && \
+	echo "Running in runs/$(RUN_DIR)..." && \
+	cd runs/$(RUN_DIR) && time ./xnet
 
 reducereaclib: $(RRL_ROOT)/reducereaclib
 

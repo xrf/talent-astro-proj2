@@ -67,6 +67,6 @@ Commonly used targets in the makefile are:
 When compiling, the code for XNet and ReduceReaclib are automatically
 downloaded to the `dist` directory.
 
-For example, to run XNet, simply run:
+For example, to run XNet in `runs/my_run`:
 
-    make run
+    make run RUN_DIR=my_run
