@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+#
+# Usage: dump-tso TSO_FILE
+#
+# Reads the TSO_FILE and writes the abundance vs time data in an ASCII format.
+# The output filename is similar to TSO_FILE but with a `.out` extension
+# instead.
+#
+# Elements whose abundances are too small are excluded based on a threshold.
+#
+import os, sys
+import numpy as np
+import elements, tso_reader
+
+# columns whose sum of abundances don't exceed this threshold are excluded
+y_sum_threshold = 1e-99
+
+# get argument
+if len(sys.argv) != 2:
+    sys.stderr.write("Usage: {0} TSO_FILE\n".format(sys.argv[0]))
+    sys.exit(1)
+
+# read data
+in_fn = sys.argv[1]
+data = tso_reader.read_tso(in_fn)
+
+# calculate sum of magnitudes
+y_sums = np.sum(data["y"], 1)
+
+# filter out the ones that are too small
+filtered_ys = []
+filtered_nuclide_names = []
+for i, y_sum in enumerate(y_sums):
+    if y_sum > y_sum_threshold:
+        a = data["aa"][i]
+        z = data["zz"][i]
+        filtered_ys.append(data["y"][i])
+        filtered_nuclide_names.append(elements.symbols[z].lower() + str(a))
+
+# save data
+fn_base, _ = os.path.splitext(in_fn)
+np.savetxt(
+    fn_base + ".out",
+    np.concatenate(((data["t"],), filtered_ys)).transpose(),
+    header="# note: columns of zeros (if any) are stripped from this file\n# " +
+           " ".join(filtered_nuclide_names),
+)

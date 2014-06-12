@@ -29,19 +29,19 @@
 # range of the axes
 #
 # format: (min, max)
-n_range = (-1, 11)
-z_range = (-1, 11)
+n_range = (-1, 60)
+z_range = (-1, 60)
 
 # size of the squares on the chart
 #
-# this needs to be adjusted if the range of axes are different, but I have no
-# idea what the units of this quantity are so have fun~
-marker_size = 700
+# adjust if the range of the axes is different; I have no idea what the units
+# of this quantity are though (seems to be nonlinear) so have fun~
+marker_size = 35
 
 # number of data points per frame
 #
 # note: number_of_frames * frame_period = number_of_data_points
-frame_period = 2
+frame_period = 4
 
 # framerate (number of frames per second)
 fps = 20
@@ -102,7 +102,7 @@ del data
 # import (Z, N) of known and stable nuclei
 base     = np.genfromtxt(base_fn, dtype=float).transpose()
 base_z   = base[1]
-base_n   = base[2]
+base_n   = base[0]   - base_z
 stable   = np.genfromtxt(stable_fn, dtype=float).transpose()
 stable_z = stable[1]
 stable_n = stable[0] - stable_z
