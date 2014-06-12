@@ -2,8 +2,7 @@
 #
 # Usage: plot-chart FILE
 #
-# A python script for plotting abundances on the nuclear chart as a function
-# of time.
+# Plots abundances on the nuclear chart as a function of time.
 #
 # The input data is read from FILE containing the XNet data.  By default it
 # uses the `tso_reader` module (from `tso_reader.py`) to read the data in the
@@ -64,6 +63,8 @@ stable_fn = "chart-stable"
 # --------
 
 import os, sys
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.animation
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -179,8 +180,16 @@ try:
     os.remove(output_video_fn)
 except:
     pass
+# older versions of Matplotlib don't support `extra_args`
+def save_animation(self, *args, **kwargs):
+    try:
+        return self.save(*args, **kwargs)
+    except TypeError:
+        del kwargs["extra_args"]
+        return self.save(*args, **kwargs)
 try:
-    animation.save(
+    save_animation(
+        animation,
         output_video_fn,
         fps=fps,
         extra_args=["-vcodec", "libx264"],
