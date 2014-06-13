@@ -11,9 +11,8 @@
 # The animation is saved as an MP4.  The output filename is found by replacing
 # the file extension of FILE with `.mp4`.
 #
-# This will require `ffmpeg` or `mencoder` to be installed with support for
-# the x264 codec.  x264 is nice because the compression artifacts aren't too
-# bad.
+# This will require `ffmpeg` to be installed with support for the `libx264`
+# codec (unless you change it, of course).
 #
 # BUG: animation saving fails on Python 3 (Matplotlib bug?).
 #
@@ -180,19 +179,11 @@ try:
     os.remove(output_video_fn)
 except:
     pass
-# older versions of Matplotlib don't support `extra_args`
-def save_animation(self, *args, **kwargs):
-    try:
-        return self.save(*args, **kwargs)
-    except TypeError:
-        del kwargs["extra_args"]
-        return self.save(*args, **kwargs)
 try:
-    save_animation(
-        animation,
+    animation.save(
         output_video_fn,
         fps=fps,
-        extra_args=["-vcodec", "libx264"],
+        codec="libx264",
     )
 except UnicodeDecodeError:
     raise Exception("matplotlib.animation.save failed; " +
