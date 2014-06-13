@@ -4,12 +4,22 @@ Project 2
 This is the second project for the [TALENT course][1]:
 [nuclear theory for astrophysics (2014)][2].
 
+
+Table of contents
+-----------------
+
+  - [Roles](#roles)
+  - [Topic](#topic)
+  - [Building and running](#building-and-running)
+  - [Input format](#input-format)
+  - [Scripts for analysis](#scripts-for-analysis)
+
 Roles
 -----
 
-- **Analysis:**     Fei Yuan
-- **Code:**         Amber Lauer
-- **Parameter:**    Tsunghan Yeh
+  - **Analysis:**     Fei Yuan
+  - **Code:**         Amber Lauer
+  - **Parameter:**    Tsunghan Yeh
 
 Topic
 -----
@@ -175,7 +185,7 @@ Dependencies:
   - `tso_reader.py`
 
 Note: requires `ffmpeg` to be installed, though you can also change the
-encoder used by matplotlib by modifying the script.
+encoder used by Matplotlib by modifying the script.
 
 This is based on a script originally written by Kaitlin J. Cook.  Nuclear data
 was provided by Kaitlin J. Cook (`chart-stable`) and Alison Dreyfuss
